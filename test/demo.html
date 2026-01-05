@@ -47,17 +47,61 @@
       </h1>
 
       <p>
-        Math textbox with initial LaTeX:
+        Math textbox with initial LaTeX (Matrix Demo):
         <span id="editable-math" class="mathquill-math-field"
-          >\frac{d}{dx}\sqrt{x}=</span
+          >\begin{pmatrix}a&b\\c&d\end{pmatrix}</span
         >
       </p>
 
       <p>
         <small
-          >Try typing <code>1/2\sqrt x</code> and using the arrow keys to move
-          around. Shortcut: use the tab key instead of arrow keys to get
-          &quot;out&quot; of a command, like
+          >Try using the arrow keys to move around the matrix. Press
+          <code>Enter</code> to add a new row below (or move to next row if empty)
+          and <code>Tab</code> in the rightmost column to add a new column.
+          Backspace in an empty cell deletes the row/column.</small
+        >
+      </p>
+
+      <p>
+        <strong>Matrix Examples:</strong><br/>
+        <code>\begin{pmatrix}</code> (parentheses):
+        <span class="mathquill-static-math">\begin{pmatrix}a&b\\c&d\end{pmatrix}</span><br/>
+        <code>\begin{bmatrix}</code> (brackets):
+        <span class="mathquill-static-math">\begin{bmatrix}1&2\\3&4\end{bmatrix}</span><br/>
+        <code>\begin{vmatrix}</code> (bars):
+        <span class="mathquill-static-math">\begin{vmatrix}x&y\\z&w\end{vmatrix}</span><br/>
+        <code>\begin{cases}</code> (piecewise):
+        <span class="mathquill-static-math">f(x)=\begin{cases}x^2&x\geq 0\\-x&x<0\end{cases}</span><br/>
+        <code>\begin{array}</code> (with hline):
+        <span class="mathquill-static-math">\begin{array}{c|c}a&b\\\hline c&d\end{array}</span>
+      </p>
+
+      <p>
+        <strong>Arrow Examples:</strong><br/>
+        <code>\underrightarrow</code>:
+        <span class="mathquill-static-math">\underrightarrow{abc}</span>
+        <code>\underleftarrow</code>:
+        <span class="mathquill-static-math">\underleftarrow{xyz}</span>
+        <code>\underleftrightarrow</code>:
+        <span class="mathquill-static-math">\underleftrightarrow{eq}</span><br/>
+        <code>\xrightleftharpoons</code>:
+        <span class="mathquill-static-math">\xrightleftharpoons[below]{above}</span>
+      </p>
+
+      <p>
+        <strong>Symbol Examples:</strong><br/>
+        <code>\sphericalangle</code>:
+        <span class="mathquill-static-math">\sphericalangle ABC</span>
+        <code>\nmid</code>:
+        <span class="mathquill-static-math">a\nmid b</span>
+        <code>\not\equiv</code>:
+        <span class="mathquill-static-math">x\not\equiv y</span>
+      </p>
+
+      <p>
+        <small
+          >Other commands still work: type <code>1/2\sqrt x</code> and use arrow keys to move
+          around. Use tab key to get &quot;out&quot; of a command, like
           <code>a_n<span>[tab]</span>x^n</code>. Many LaTeX-style symbols and
           commands preceded by a backslash are supported, such as
           <code>\forall</code> or <code>n\choose k</code>.</small

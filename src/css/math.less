@@ -214,7 +214,8 @@
     border-top: 1px solid;
     margin-top: 1px;
   }
-  .mq-underline {
+  .mq-underline,
+  .mq-underarrow {
     border-bottom: 1px solid;
     margin-bottom: 1px;
   }
@@ -474,6 +475,100 @@
     padding-top: 0.2em;
     text-align: center;
     position: relative;
+  }
+
+  .mq-underarrow {
+    min-width: 0.5em;
+    padding-bottom: 0.2em;
+    text-align: center;
+    position: relative;
+
+    .mq-arrow-right-content,
+    .mq-arrow-left-content {
+      top: auto;
+      bottom: -0.67em;
+    }
+  }
+
+  .mq-harpoons {
+    text-align: center;
+    position: relative;
+  }
+
+  .mq-harpoons-numerator,
+  .mq-harpoons-denominator,
+  .mq-harpoons-harpoons {
+    display: block;
+  }
+
+  .mq-harpoons-harpoons-helper {
+    display: none;
+  }
+
+  .mq-harpoons-numerator,
+  .mq-harpoons-denominator {
+    font-size: 70%;
+  }
+
+  .mq-harpoons-numerator {
+    padding: 0 0.1em;
+  }
+
+  .mq-harpoons-denominator {
+    float: right;
+    width: 100%;
+    padding: 0.1em;
+  }
+
+  .mq-matrix {
+    vertical-align: middle;
+    margin-left: 0.1em;
+    margin-right: 0.1em;
+
+    > .mq-paren {
+      vertical-align: middle;
+    }
+
+    table {
+      width: auto;
+      border-bottom: none;
+      border-spacing: 3px;
+      border-collapse: separate;
+      vertical-align: middle;
+      &.mq-rows-1 {
+        /* better alignment when there's just one row */
+        vertical-align: middle;
+        margin-bottom: 1px;
+      }
+    }
+
+    td {
+      border: none;
+      width: auto; /* defensive resets */
+      padding: 0.1em 0.3em;
+      vertical-align: baseline;
+
+      // Prevent brackets inside cells from being scaled to matrix height
+      .mq-paren.mq-scaled {
+        transform: none !important;
+        -webkit-transform: none !important;
+        font-size: 1em !important;
+      }
+    }
+  }
+
+  .mq-matrix-array {
+    table {
+      border-collapse: collapse;
+    }
+
+    tr:first-child td {
+      border-bottom: 0.5px solid black;
+    }
+
+    td + td {
+      border-left: 0.5px solid black;
+    }
   }
 }
 

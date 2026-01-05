@@ -1,6 +1,47 @@
 /***************************
  * Commands and Operators.
  **************************/
+
+// Scale function for scaling delimiters
+// Uses CSS 2D transform to scale HTML elements
+let scale: (jQ: DOMFragment, x: number, y: number) => void;
+
+(() => {
+  const div = document.createElement('div');
+  const div_style = div.style;
+  const transformPropNames: { [key: string]: number } = {
+    transform: 1,
+    WebkitTransform: 1,
+    MozTransform: 1,
+    OTransform: 1,
+    msTransform: 1
+  };
+  let transformPropName: string | undefined;
+
+  for (const prop in transformPropNames) {
+    if (prop in div_style) {
+      transformPropName = prop;
+      break;
+    }
+  }
+
+  if (transformPropName) {
+    const prop = transformPropName;
+    scale = function (jQ: DOMFragment, x: number, y: number) {
+      jQ.eachElement((el) => {
+        (el.style as any)[prop] = 'scale(' + x + ',' + y + ')';
+      });
+    };
+  } else {
+    // Fallback: just scale fontSize
+    scale = function (jQ: DOMFragment, x: number, y: number) {
+      jQ.eachElement((el) => {
+        el.style.fontSize = y + 'em';
+      });
+    };
+  }
+})();
+
 var SVG_SYMBOLS = {
   sqrt: {
     width: '',
@@ -210,6 +251,41 @@ LatexCmds.overleftrightarrow = () =>
         h('span', { class: 'mq-arrow-right-content' }, [h.text(ArrowText)])
     }
   );
+LatexCmds.underrightarrow = () =>
+  new Style(
+    '\\underrightarrow',
+    'span',
+    { class: 'mq-non-leaf mq-underarrow' },
+    'Under Right Arrow',
+    {
+      afterChild: () =>
+        h('span', { class: 'mq-arrow-right-content' }, [h.text(ArrowText)])
+    }
+  );
+LatexCmds.underleftarrow = () =>
+  new Style(
+    '\\underleftarrow',
+    'span',
+    { class: 'mq-non-leaf mq-underarrow' },
+    'Under Left Arrow',
+    {
+      beforeChild: () =>
+        h('span', { class: 'mq-arrow-left-content' }, [h.text(ArrowText)])
+    }
+  );
+LatexCmds.underleftrightarrow = () =>
+  new Style(
+    '\\underleftrightarrow',
+    'span',
+    { class: 'mq-non-leaf mq-underarrow' },
+    'Under Left and Right Arrow',
+    {
+      beforeChild: () =>
+        h('span', { class: 'mq-arrow-left-content' }, [h.text(ArrowText)]),
+      afterChild: () =>
+        h('span', { class: 'mq-arrow-right-content' }, [h.text(ArrowText)])
+    }
+  );
 LatexCmds.overarc = () =>
   new Style(
     '\\overarc',
@@ -230,6 +306,77 @@ LatexCmds.dot = () => {
     )
   );
 };
+
+// Harpoons command - handles both one-argument and two-argument variants
+class Harpoons extends MathCommand {
+  constructor(numBlocks: 1 | 2 = 1) {
+    const domView = new DOMView(numBlocks, (blocks) => {
+      const children: VNode[] = [];
+
+      if (numBlocks === 2) {
+        // Two-argument variant: \xrightleftharpoons[below]{above}
+        children.push(h.block('span', { class: 'mq-harpoons-numerator' }, blocks[1]));
+      } else {
+        // One-argument variant: \xrightleftharpoons{above}
+        children.push(h.block('span', { class: 'mq-harpoons-numerator' }, blocks[0]));
+      }
+
+      children.push(h('span', { class: 'mq-harpoons-harpoons' }, [h.text('\u21cc')]));
+      children.push(h('span', { class: 'mq-harpoons-harpoons-helper' }, [h.text('\u21cc')]));
+
+      if (numBlocks === 2) {
+        children.push(h.block('span', { class: 'mq-harpoons-denominator' }, blocks[0]));
+      }
+
+      return h('span', { class: 'mq-harpoons mq-harpoons-rightleft mq-non-leaf' }, children);
+    });
+
+    super('\\xrightleftharpoons', domView);
+  }
+
+  parser() {
+    return latexMathParser.optBlock
+      .then(function (optBlock: MathBlock) {
+        return latexMathParser.block.map(function (block: MathBlock) {
+          const harpoons = new Harpoons(2);
+          harpoons.blocks = [optBlock, block];
+          optBlock.adopt(harpoons, 0, 0);
+          block.adopt(harpoons, optBlock, 0);
+          return harpoons;
+        });
+      })
+      .or(
+        latexMathParser.block.map(function (block: MathBlock) {
+          const harpoons = new Harpoons(1);
+          harpoons.blocks = [block];
+          block.adopt(harpoons, 0, 0);
+          return harpoons;
+        })
+      );
+  }
+
+  latexRecursive(ctx: LatexContext) {
+    this.checkCursorContextOpen(ctx);
+
+    if (this.blocks.length === 2) {
+      // Two-argument variant
+      ctx.latex += this.ctrlSeq + '[';
+      this.ends[L].latexRecursive(ctx);
+      ctx.latex += ']{';
+      this.ends[R].latexRecursive(ctx);
+      ctx.latex += '}';
+    } else {
+      // One-argument variant
+      ctx.latex += this.ctrlSeq + '{';
+      this.ends[L].latexRecursive(ctx);
+      ctx.latex += '}';
+    }
+
+    this.checkCursorContextClose(ctx);
+  }
+}
+
+LatexCmds.xrightleftharpoons = () => new Harpoons();
 
 // `\textcolor{color}{math}` will apply a color to the given math content, where
 // `color` is any valid CSS Color Value (see [SitePoint docs][] (recommended),
@@ -1947,3 +2094,665 @@ class EmbedNode extends MQSymbol {
   }
 }
 LatexCmds.embed = EmbedNode;
+
+// LaTeX environments
+// Environments are delimited by an opening \begin{} and a closing
+// \end{}. Everything inside those tags will be formatted in a
+// special manner depending on the environment type.
+type EnvironmentConstructor = { new (): Environment };
+const Environments: { [name: string]: EnvironmentConstructor } = {};
+
+class BeginCommand extends MathCommand {
+  parser() {
+    const string = Parser.string;
+    const regex = Parser.regex;
+    return string('{')
+      .then(regex(/^[a-z]+/i))
+      .skip(string('}'))
+      .then(function (env) {
+        const EnvClass = Environments[env];
+        return (
+          EnvClass
+            ? new EnvClass().parser()
+            : Parser.fail('unknown environment type: ' + env)
+        ).skip(string('\\end{' + env + '}'));
+      });
+  }
+}
+LatexCmds.begin = BeginCommand;
+
+class Environment extends MathCommand {
+  environment = 'matrix';
+  template = [
+    ['\\begin{', '}'],
+    ['\\end{', '}']
+  ];
+
+  wrappers() {
+    return [
+      this.template[0].join(this.environment),
+      this.template[1].join(this.environment)
+    ];
+  }
+}
+
+interface MatrixParentheses {
+  left: string | null;
+  right: string | null;
+}
+
+const MATRIX_DELIMITERS = {
+  column: '&',
+  row: '\\\\'
+};
+
+const mqBlockId = 'mathquill-block-id';
+
+class Matrix extends Environment {
+  parentheses: MatrixParentheses = {
+    left: null,
+    right: null
+  };
+  blocks: MatrixCell[] = [];
+  hline?: boolean;
+  options?: string;
+
+  reflow() {
+    const matrixEl = this.domFrag().oneElement();
+    const blockjQ = matrixEl.querySelector('table');
+    if (!blockjQ) return;
+
+    const fontSize = parseFloat(getComputedStyle(blockjQ).fontSize);
+    const height = blockjQ.offsetHeight / fontSize;
+
+    const parens = matrixEl.querySelectorAll('.mq-paren');
+    if (parens.length) {
+      parens.forEach((paren) => {
+        scale(
+          domFrag(paren),
+          Math.min(1 + 0.2 * (height - 1), 1.2),
+          1.05 * height
+        );
+      });
+    }
+  }
+
+  latexRecursive(ctx: LatexContext) {
+    this.checkCursorContextOpen(ctx);
+
+    let hline = this.hline;
+    let latex = '';
+    let row: number | undefined;
+    const startIndex = ctx.uncleanedLatex.length;
+
+    this.eachChild((cell: MatrixCell) => {
+      if (typeof row !== 'undefined') {
+        if (row !== cell.row) {
+          latex += MATRIX_DELIMITERS.row + '\n';
+          if (hline) {
+            latex += '\\hline\n';
+            hline = false;
+          }
+        } else {
+          latex += MATRIX_DELIMITERS.column;
+        }
+      }
+      row = cell.row;
+
+      const cellStartIndex = ctx.uncleanedLatex.length;
+      cell.latexRecursive(ctx);
+      const cellLatex = ctx.uncleanedLatex.substring(cellStartIndex);
+      latex += cellLatex;
+    });
+
+    const wrappers = this.wrappers();
+    const options = this.options ? '{' + this.options + '}' : '';
+    ctx.uncleanedLatex =
+      ctx.uncleanedLatex.substring(0, startIndex) +
+      wrappers[0] + options + '\n' + latex + '\n' + wrappers[1];
+
+    this.checkCursorContextClose(ctx);
+  }
+
+  domView = new DOMView(0, () => h('span'));
+
+  html() {
+    const cells: MatrixCell[][] = [];
+    let row: number | undefined;
+
+    const parenHtml = (paren: string | null) => {
+      if (!paren) return null;
+      return h('span', { class: 'mq-scaled mq-paren' }, [parseHTML(paren)]);
+    };
+
+    // Build 2D array of cells
+    this.eachChild((cell: MatrixCell) => {
+      if (row !== cell.row) {
+        row = cell.row;
+        cells[row] = [];
+      }
+      cells[row].push(cell);
+    });
+
+    let blockIdx = 0;
+    const numBlocks = this.blocks.length;
+
+    this.domView = new DOMView(numBlocks, (blocks) => {
+      blockIdx = 0;
+      const tableRows = cells.map((rowCells) => {
+        const tds = rowCells.map(() => {
+          return h('td', {}, [h.block('span', {}, blocks[blockIdx++])]);
+        });
+        return h('tr', {}, tds);
+      });
+
+      const children: (VNode | null)[] = [
+        parenHtml(this.parentheses.left),
+        h('table', { class: 'mq-non-leaf' }, tableRows),
+        parenHtml(this.parentheses.right)
+      ];
+
+      return h('span', { class: `mq-matrix mq-matrix-${this.environment} mq-non-leaf` }, children.filter((x) => x !== null) as VNode[]);
+    });
+
+    return super.html();
+  }
+
+  // Create default 4-cell matrix
+  createBlocks() {
+    this.blocks = [
+      new MatrixCell(0, this),
+      new MatrixCell(0, this),
+      new MatrixCell(1, this),
+      new MatrixCell(1, this)
+    ];
+    this.ends[L] = this.blocks[0];
+    this.ends[R] = this.blocks[this.blocks.length - 1];
+  }
+
+  parser() {
+    const self = this;
+    const optWhitespace = Parser.optWhitespace;
+    const string = Parser.string;
+    const regex = Parser.regex;
+
+    return regex(/^({[^}]*})?/)
+      .then(function (options: string) {
+        if (!self.options && options) {
+          self.options = options.slice(1, -1);
+        }
+        return Parser.succeed(self);
+      })
+      .skip(optWhitespace)
+      .then(function () {
+        return string(MATRIX_DELIMITERS.column)
+          .or(string(MATRIX_DELIMITERS.row))
+          .or(optWhitespace.then(string('\\hline')).skip(optWhitespace))
+          .or(latexMathParser.block);
+      })
+      .many()
+      .skip(optWhitespace)
+      .then(function (items: any[]) {
+        let blocks: MathBlock[] = [];
+        let row = 0;
+        self.blocks = [];
+
+        function addCell() {
+          self.blocks.push(new MatrixCell(row, self, blocks));
+          blocks = [];
+        }
+
+        for (let i = 0; i < items.length; i += 1) {
+          if (items[i] instanceof MathBlock) {
+            blocks.push(items[i]);
+          } else if (items[i] === '\\hline') {
+            self.hline = true;
+          } else {
+            addCell();
+            if (items[i] === MATRIX_DELIMITERS.row) row += 1;
+          }
+        }
+        addCell();
+        self.autocorrect();
+        return Parser.succeed(self);
+      });
+  }
+
+  // Relink all the cells after parsing
+  finalizeTree(options?: CursorOptions) {
+    const table = this.domFrag().oneElement().querySelector('table');
+    if (table) {
+      const trs = table.querySelectorAll('tr');
+      domFrag(table).toggleClass('mq-rows-1', trs.length === 1);
+    }
+    this.relink();
+  }
+
+  // Set up directional pointers between cells
+  relink() {
+    const blocks = this.blocks;
+    const rows: MatrixCell[][] = [];
+    let row: number | undefined;
+    let column: number;
+    let cell: MatrixCell;
+
+    // Use a for loop rather than eachChild
+    // as we're still making sure children()
+    // is set up properly
+    for (let i = 0; i < blocks.length; i += 1) {
+      cell = blocks[i];
+      if (row !== cell.row) {
+        row = cell.row;
+        rows[row] = [];
+        column = 0;
+      }
+      rows[row][column!] = cell;
+
+      // Set up horizontal linkage
+      (cell as any)[R] = blocks[i + 1];
+      (cell as any)[L] = blocks[i - 1];
+
+      // Set up vertical linkage
+      if (rows[row - 1] && rows[row - 1][column!]) {
+        cell.upOutOf = rows[row - 1][column!];
+        rows[row - 1][column!].downOutOf = cell;
+      }
+
+      column! += 1;
+    }
+
+    // set start and end blocks of matrix
+    this.ends[L] = blocks[0];
+    this.ends[R] = blocks[blocks.length - 1];
+  }
+
+  // Ensure consistent row lengths
+  autocorrect() {
+    const lengths: number[] = [];
+    const rows: MatrixCell[][] = [];
+    const blocks = this.blocks;
+    let maxLength: number, shortfall: number, position: number, row: number, i: number;
+
+    for (i = 0; i < blocks.length; i += 1) {
+      row = blocks[i].row;
+      rows[row] = rows[row] || [];
+      rows[row].push(blocks[i]);
+      lengths[row] = rows[row].length;
+    }
+
+    maxLength = Math.max(...lengths);
+    if (maxLength !== Math.min(...lengths)) {
+      // Pad shorter rows to correct length
+      for (i = 0; i < rows.length; i += 1) {
+        shortfall = maxLength - rows[i].length;
+        while (shortfall) {
+          position = maxLength * i + rows[i].length;
+          blocks.splice(position, 0, new MatrixCell(i, this));
+          shortfall -= 1;
+        }
+      }
+      this.relink();
+    }
+  }
+
+  // Deleting a cell will also delete the current row and
+  // column if they are empty, and relink the matrix.
+  deleteCell(currentCell: MatrixCell) {
+    const rows: MatrixCell[][] = [];
+    const columns: MatrixCell[][] = [];
+    let myRow: MatrixCell[] = [];
+    let myColumn: MatrixCell[] = [];
+    const blocks = this.blocks;
+    let row: number | undefined;
+    let column: number;
+
+    // Create arrays for cells in the current row / column
+    this.eachChild((cell: MatrixCell) => {
+      if (row !== cell.row) {
+        row = cell.row;
+        rows[row] = [];
+        column = 0;
+      }
+      columns[column!] = columns[column!] || [];
+      columns[column!].push(cell);
+      rows[row].push(cell);
+
+      if (cell === currentCell) {
+        myRow = rows[row];
+        myColumn = columns[column!];
+      }
+
+      column! += 1;
+    });
+
+    function isEmpty(cells: MatrixCell[]) {
+      const empties: MatrixCell[] = [];
+      for (let i = 0; i < cells.length; i += 1) {
+        if (cells[i].isEmpty()) empties.push(cells[i]);
+      }
+      return empties.length === cells.length;
+    }
+
+    function remove(cells: MatrixCell[]) {
+      for (let i = 0; i < cells.length; i += 1) {
+        const idx = blocks.indexOf(cells[i]);
+        if (idx > -1) {
+          cells[i].remove();
+          blocks.splice(idx, 1);
+        }
+      }
+    }
+
+    if (isEmpty(myRow) && myColumn.length > 1) {
+      row = rows.indexOf(myRow);
+      // Decrease all following row numbers
+      this.eachChild((cell: MatrixCell) => {
+        if (cell.row > row!) cell.row -= 1;
+      });
+      // Dispose of cells and remove <tr>
+      remove(myRow);
+      const table = this.domFrag().oneElement().querySelector('table');
+      if (table) {
+        const tr = table.querySelectorAll('tr')[row!];
+        if (tr) tr.remove();
+      }
+    }
+    if (isEmpty(myColumn) && myRow.length > 1) {
+      remove(myColumn);
+    }
+    this.finalizeTree();
+  }
+
+  addRow(afterCell: MatrixCell): MatrixCell {
+    const previous: MatrixCell[] = [];
+    const newCells: MatrixCell[] = [];
+    const next: MatrixCell[] = [];
+    const row = afterCell.row;
+    let columns = 0;
+    let block: MatrixCell;
+
+    this.eachChild((cell: MatrixCell) => {
+      // Cache previous rows
+      if (cell.row <= row) {
+        previous.push(cell);
+      }
+      // Work out how many columns
+      if (cell.row === row) {
+        columns += 1;
+      }
+      // Cache cells after new row
+      if (cell.row > row) {
+        cell.row += 1;
+        next.push(cell);
+      }
+    });
+
+    const newRow = h('tr');
+
+    // Add new cells, one for each column
+    for (let i = 0; i < columns; i += 1) {
+      block = new MatrixCell(row + 1);
+      block.parent = this;
+      newCells.push(block);
+
+      // Create cell <td>s and add to new row
+      const td = h('td', { class: 'mq-empty' });
+      td.setAttribute(mqBlockId, String(block.id));
+      block.setDOM(td);
+      newRow.appendChild(td);
+    }
+
+    // Insert the new row
+    const table = this.domFrag().oneElement().querySelector('table');
+    if (table) {
+      const trs = table.querySelectorAll('tr');
+      const targetRow = trs[row];
+      if (targetRow && targetRow.nextSibling) {
+        table.insertBefore(newRow, targetRow.nextSibling);
+      } else {
+        table.appendChild(newRow);
+      }
+    }
+
+    this.blocks = previous.concat(newCells, next);
+    return newCells[0];
+  }
+
+  addColumn(afterCell: MatrixCell): MatrixCell {
+    const rows: MatrixCell[][] = [];
+    const newCells: MatrixCell[] = [];
+    let column: number | undefined;
+    let block: MatrixCell;
+
+    // Build rows array and find new column index
+    this.eachChild((cell: MatrixCell) => {
+      rows[cell.row] = rows[cell.row] || [];
+      rows[cell.row].push(cell);
+      if (cell === afterCell) column = rows[cell.row].length;
+    });
+
+    // Add new cells, one for each row
+    for (let i = 0; i < rows.length; i += 1) {
+      block = new MatrixCell(i);
+      block.parent = this;
+      newCells.push(block);
+      rows[i].splice(column!, 0, block);
+
+      const td = h('td', { class: 'mq-empty' });
+      td.setAttribute(mqBlockId, String(block.id));
+      block.setDOM(td);
+    }
+
+    // Add cell <td> elements in correct positions
+    const table = this.domFrag().oneElement().querySelector('table');
+    if (table) {
+      const trs = table.querySelectorAll('tr');
+      trs.forEach((tr, i) => {
+        const tds = tr.querySelectorAll('td');
+        const targetTd = tds[column! - 1];
+        const newTd = rows[i][column!].domFrag().oneElement();
+        if (targetTd && targetTd.nextSibling) {
+          tr.insertBefore(newTd, targetTd.nextSibling);
+        } else {
+          tr.appendChild(newTd);
+        }
+      });
+    }
+
+    // Flatten the rows array-of-arrays
+    this.blocks = ([] as MatrixCell[]).concat(...rows);
+    return newCells[afterCell.row];
+  }
+
+  insert(method: 'addRow' | 'addColumn', afterCell: MatrixCell) {
+    const cellToFocus = this[method](afterCell);
+    this.finalizeTree();
+    this.bubble((node) => {
+      if (node instanceof Matrix) {
+        node.reflow();
+      }
+      return undefined;
+    });
+    const cursor = this.cursor || (this.parent as Matrix).cursor;
+    if (cursor) {
+      cursor.insAtRightEnd(cellToFocus);
+    }
+  }
+
+  backspace(
+    cell: MatrixCell,
+    dir: Direction,
+    cursor: Cursor,
+    finalDeleteCallback: () => void
+  ) {
+    let dirwards: MQNode | undefined = cell[dir] as MQNode | undefined;
+    if (cell.isEmpty()) {
+      this.deleteCell(cell);
+      while (
+        dirwards &&
+        dirwards[dir] &&
+        this.blocks.indexOf(dirwards as MatrixCell) === -1
+      ) {
+        dirwards = dirwards[dir] as MQNode | undefined;
+      }
+      if (dirwards) {
+        cursor.insAtDirEnd(-dir as Direction, dirwards as MQNode);
+      }
+      if (this.blocks.length === 1 && this.blocks[0].isEmpty()) {
+        finalDeleteCallback();
+        this.finalizeTree();
+      }
+      this.bubble((node) => {
+        if (node instanceof Matrix) {
+          node.reflow();
+        }
+        return undefined;
+      });
+    }
+  }
+}
+Environments.matrix = Matrix;
+
+// Matrix variants with different parentheses
+class PMatrix extends Matrix {
+  environment = 'pmatrix';
+  parentheses = {
+    left: '(',
+    right: ')'
+  };
+}
+Environments.pmatrix = PMatrix;
+
+class BMatrix extends Matrix {
+  environment = 'bmatrix';
+  parentheses = {
+    left: '[',
+    right: ']'
+  };
+}
+Environments.bmatrix = BMatrix;
+
+class CapitalBMatrix extends Matrix {
+  environment = 'Bmatrix';
+  parentheses = {
+    left: '{',
+    right: '}'
+  };
+}
+Environments.Bmatrix = CapitalBMatrix;
+
+class VMatrix extends Matrix {
+  environment = 'vmatrix';
+  parentheses = {
+    left: '|',
+    right: '|'
+  };
+}
+Environments.vmatrix = VMatrix;
+
+class CapitalVMatrix extends Matrix {
+  environment = 'Vmatrix';
+  parentheses = {
+    left: '&#8214;',
+    right: '&#8214;'
+  };
+}
+Environments.Vmatrix = CapitalVMatrix;
+
+class Cases extends Matrix {
+  environment = 'cases';
+  parentheses = {
+    left: '{',
+    right: null
+  };
+}
+Environments.cases = Cases;
+
+class ArrayEnv extends Matrix {
+  environment = 'array';
+  parentheses = {
+    left: null,
+    right: null
+  };
+  hline = true;
+  options = 'l|l';
+}
+Environments.array = ArrayEnv;
+
+// Replacement for MathBlock inside matrix cells
+// Adds matrix-specific keyboard commands
+class MatrixCell extends MathBlock {
+  row: number;
+
+  constructor(row: number, parent?: Matrix, replaces?: MathBlock[]) {
+    super();
+    this.row = row;
+    if (parent) {
+      const parentEndR = parent.getEnd(R);
+      this.adopt(parent, parentEndR, 0);
+    }
+    if (replaces) {
+      for (let i = 0; i < replaces.length; i++) {
+        const children = replaces[i].children();
+        const thisEndR = this.getEnd(R);
+        children.adopt(this, thisEndR, 0);
+      }
+    }
+  }
+
+  keystroke(key: string, e: KeyboardEvent, ctrlr: Controller): void | boolean {
+    switch (key) {
+      case 'Tab': {
+        // Work out how many columns
+        const currentCell = this;
+        let columns = 0;
+        let currentColumn: number | undefined;
+        (this.parent as Matrix).eachChild((cell) => {
+          const matrixCell = cell as MatrixCell;
+          if (matrixCell.row === currentCell.row) {
+            if (cell === currentCell) currentColumn = columns;
+            columns += 1;
+          }
+        });
+        // Only add new column if this is the rightmost column
+        if (currentColumn === columns - 1) {
+          e.preventDefault();
+          return (this.parent as Matrix).insert('addColumn', this);
+        }
+        break;
+      }
+      case 'Enter': {
+        // Add a row below the current one, unless the next row is already empty
+        const nextRow = this.row + 1;
+        let nextRowIsEmpty = true;
+        let nextRowFirstCell: MatrixCell | undefined;
+        (this.parent as Matrix).eachChild((cell) => {
+          const matrixCell = cell as MatrixCell;
+          if (matrixCell.row === nextRow) {
+            if (!nextRowFirstCell) {
+              nextRowFirstCell = matrixCell;
+            }
+            if (!matrixCell.isEmpty()) {
+              nextRowIsEmpty = false;
+            }
+          }
+        });
+        e.preventDefault();
+        if (nextRowFirstCell && nextRowIsEmpty) {
+          ctrlr.cursor.insAtDirEnd(L, nextRowFirstCell);
+          break;
+        }
+        return (this.parent as Matrix).insert('addRow', this);
+      }
+    }
+    return super.keystroke(key, e, ctrlr);
+  }
+
+  deleteOutOf(dir: Direction, cursor: Cursor) {
+    const parent = this.parent as Matrix;
+    parent.backspace(this, dir, cursor, () => {
+      // called when last cell gets deleted
+      super.deleteOutOf(dir, cursor);
+    });
+  }
+}

@@ -44,6 +44,11 @@ LatexCmds['≈'] =
   LatexCmds.approx =
     bindBinaryOperator('\\approx ', '&asymp;', 'approximately equal to');
 
+LatexCmds['≢'] =
+  LatexCmds.notequiv =
+  LatexCmds.nequiv =
+    bindBinaryOperator('\\not\\equiv ', '&#8802;', 'not equivalent to');
+
 LatexCmds['∈'] =
   LatexCmds.isin =
   LatexCmds['in'] =
@@ -670,10 +675,57 @@ LatexCmds['∖'] =
   LatexCmds.smallsetminus =
     bindVanillaSymbol('\\setminus ', '&#8726;', 'set minus');
 
-LatexCmds.not = //bind(MQSymbol,'\\not ','<span class="not">/</span>', 'not');
-  LatexCmds['¬'] =
+LatexCmds['¬'] =
   LatexCmds.neg =
     bindVanillaSymbol('\\neg ', '&not;', 'not');
+
+// \not parser that handles combinations like \not\ni, \not\equiv etc.
+class NotSymbol extends VanillaSymbol {
+  // If one of these appears immediately after \not, the parser returns a different symbol
+  static suffixes: { [key: string]: string } = {
+    '\\equiv': 'notequiv',
+    '\\ni': 'notni',
+    '\\subset': 'notsubset',
+    '\\subseteq': 'notsubseteq',
+    '\\supset': 'notsupset',
+    '\\supseteq': 'notsupseteq'
+  };
+
+  constructor() {
+    super('\\neg ', h.entityText('&not;'), 'not');
+  }
+
+  parser() {
+    const succeed = Parser.succeed;
+    const optWhitespace = Parser.optWhitespace;
+
+    // Sort the suffixes, longest first
+    const suffixes = Object.keys(NotSymbol.suffixes).sort(
+      (a, b) => b.length - a.length
+    );
+
+    // Returns a parser matching any string in array
+    function anyOf(strings: string[]): Parser<string> {
+      const first = strings.shift()!;
+      let parser = Parser.string(first);
+      if (strings.length) {
+        parser = parser.or(anyOf(strings));
+      }
+      return parser;
+    }
+
+    const self = this;
+    return anyOf(suffixes)
+      .then(function (suffix: string) {
+        const cmdName = NotSymbol.suffixes[suffix];
+        const cmdFactory = LatexCmds[cmdName];
+        const cmd = typeof cmdFactory === 'function' ? cmdFactory() : cmdFactory;
+        return optWhitespace.then(succeed(cmd));
+      })
+      .or(optWhitespace.then(succeed(self)));
+  }
+}
+LatexCmds.not = () => new NotSymbol();
 
 LatexCmds['…'] =
   LatexCmds.dots =

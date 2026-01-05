@@ -885,6 +885,7 @@ LatexCmds['□'] = LatexCmds.square = bindVanillaSymbol(
   'square'
 );
 LatexCmds.mid = bindVanillaSymbol('\\mid ', '\u2223', 'mid');
+LatexCmds['∤'] = LatexCmds.nmid = bindVanillaSymbol('\\nmid ', '\u2224', 'does not divide');
 
 // support for custom css
 class SymbolWithCustomClass extends MQSymbol {
@@ -1547,6 +1548,12 @@ LatexCmds['∡'] = LatexCmds.measuredangle = bindVanillaSymbol(
   '\\measuredangle ',
   '&#8737;',
   'measured angle'
+);
+
+LatexCmds['∢'] = LatexCmds.sphericalangle = bindVanillaSymbol(
+  '\\sphericalangle ',
+  '&#8738;',
+  'spherical angle'
 );
 
 //not real LaTex command see https://github.com/mathquill/mathquill/pull/552 for more details
