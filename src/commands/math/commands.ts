@@ -1031,6 +1031,95 @@ LatexCmds['∫'] =
         MathCommand.prototype.createLeftOf.call(this, cursor);
       }
     };
+
+// Finnish integral substitution sign
+// Used in Finnish mathematics education for showing substitution bounds
+LatexCmds.bigg = // HACK: \bigg is used as the LaTeX output format
+  LatexCmds.intsub =
+  LatexCmds.integralsubstitution =
+    class extends SummationNotation {
+      constructor() {
+        super('\\bigg', '', 'integral substitution');
+
+        this.ariaLabel = 'integral substitution';
+        this.domView = new DOMView(2, (blocks) =>
+          h('span', { class: 'mq-intsub mq-non-leaf' }, [
+            h('big', {}, [h.text('/')]),
+            h('span', { class: 'mq-supsub mq-non-leaf' }, [
+              h('span', { class: 'mq-sup' }, [
+                h.block('span', { class: 'mq-sup-inner' }, blocks[1])
+              ]),
+              h.block('span', { class: 'mq-sub' }, blocks[0]),
+              h('span', { style: 'display:inline-block;width:0' }, [
+                h.text(U_ZERO_WIDTH_SPACE)
+              ])
+            ])
+          ])
+        );
+      }
+
+      createLeftOf(cursor: Cursor) {
+        // FIXME: refactor rather than overriding
+        MathCommand.prototype.createLeftOf.call(this, cursor);
+      }
+
+      parser() {
+        const self = this;
+        const string = Parser.string;
+        const optWhitespace = Parser.optWhitespace;
+        const succeed = Parser.succeed;
+
+        // Create the two blocks for sub and sup
+        self.blocks = [new MathBlock(), new MathBlock()];
+        for (let i = 0; i < self.blocks.length; i += 1) {
+          self.blocks[i].adopt(self, self.getEnd(R), 0);
+        }
+
+        // Parse \bigg/_{...}^{...} format
+        // Allow any number of \! for negative space (used for visual adjustment)
+        return string('/_{')
+          .then(string('\\!').many())
+          .then(latexMathParser)
+          .then(function (block: MathBlock) {
+            block.children().adopt(self.blocks[0], self.blocks[0].getEnd(R), 0);
+            return succeed(self);
+          })
+          .then(optWhitespace)
+          .then(string('}'))
+          .then(optWhitespace)
+          .then(string('^'))
+          .then(latexMathParser.block)
+          .then(function (block: MathBlock) {
+            block.children().adopt(self.blocks[1], self.blocks[1].getEnd(R), 0);
+            return succeed(self);
+          });
+      }
+
+      latexRecursive(ctx: LatexContext) {
+        this.checkCursorContextOpen(ctx);
+
+        const simplify = (latex: string) =>
+          latex.length === 1 ? latex : '{' + (latex || ' ') + '}';
+
+        // Get LaTeX for both blocks
+        const subCtx: LatexContext = { latex: '', uncleanedLatex: '' };
+        this.getEnd(L).latexRecursive(subCtx);
+        const subLatex = subCtx.latex || subCtx.uncleanedLatex;
+
+        const supCtx: LatexContext = { latex: '', uncleanedLatex: '' };
+        this.getEnd(R).latexRecursive(supCtx);
+        const supLatex = supCtx.latex || supCtx.uncleanedLatex;
+
+        ctx.uncleanedLatex +=
+          '\\bigg/_{\\!\\!\\!\\!\\!' +
+          simplify(subLatex) +
+          '}^' +
+          simplify(supLatex);
+
+        this.checkCursorContextClose(ctx);
+      }
+    };
+
 var Fraction =
   (LatexCmds.frac =
   LatexCmds.dfrac =
