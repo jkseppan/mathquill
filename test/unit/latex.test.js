@@ -954,6 +954,12 @@ suite('latex', function () {
 
       assert.equal(getSpan('.nest-1'), '6 abc');
       assert.equal(getSpan('.nest-2'), '6 abc');
+
+      // sin breaks apart.
+      mq.latex('\\sin');
+      assert.equal(getSpan('.mq-root-block :nth-child(1)'), '0 \\s');
+      assert.equal(getSpan('.mq-root-block :nth-child(2)'), '2 i');
+      assert.equal(getSpan('.mq-root-block :nth-child(3)'), '3 n');
     });
   });
 
