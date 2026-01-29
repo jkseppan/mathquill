@@ -905,6 +905,62 @@ suite('latex', function () {
         executeCases(fourShiftLeftCases, ['Left Left Left Left'], 'Shift-Left');
       });
     });
+
+    test('.domNodeToSpan(...)', function () {
+      mq.latex('\\frac{abc}{\\token{1}\\token{2}\\token{3}}');
+
+      function domNodeToSpan(node) {
+        const s = mq.domNodeToSpan(node);
+        if (!s) return '';
+        return `${s.startIndex} ${s.latex.slice(s.startIndex, s.endIndex)}`;
+      }
+
+      const root = document.querySelector('#mock .mq-root-block');
+
+      function getSpan(selector) {
+        return domNodeToSpan(root.querySelector(selector));
+      }
+
+      assert.equal(
+        getSpan('.mq-fraction'),
+        '0 \\frac{abc}{\\token{1}\\token{2}\\token{3}}'
+      );
+      assert.equal(getSpan('.mq-numerator'), '6 abc');
+      assert.equal(
+        getSpan('.mq-denominator'),
+        '11 \\token{1}\\token{2}\\token{3}'
+      );
+      assert.equal(getSpan('.mq-numerator :nth-child(1)'), '6 a');
+      assert.equal(getSpan('.mq-numerator :nth-child(2)'), '7 b');
+      assert.equal(getSpan('.mq-numerator :nth-child(3)'), '8 c');
+      assert.equal(getSpan('.mq-denominator :nth-child(1)'), '11 \\token{1}');
+      assert.equal(getSpan('.mq-denominator :nth-child(2)'), '20 \\token{2}');
+      assert.equal(getSpan('.mq-denominator :nth-child(3)'), '29 \\token{3}');
+
+      const span1 = document.createElement('span');
+      span1.className = 'nest-1';
+      const span2 = document.createElement('span');
+      span2.className = 'nest-2';
+      span1.appendChild(span2);
+
+      // Nested children of non-groups such as tokens should also be treated as the node.
+      root.querySelector('.mq-denominator :nth-child(2)').appendChild(span1);
+
+      assert.equal(getSpan('.nest-1'), '20 \\token{2}');
+      assert.equal(getSpan('.nest-2'), '20 \\token{2}');
+
+      // Nested children of groups such as numerators should also be treated as the group.
+      root.querySelector('.mq-numerator').appendChild(span1);
+
+      assert.equal(getSpan('.nest-1'), '6 abc');
+      assert.equal(getSpan('.nest-2'), '6 abc');
+
+      // sin breaks apart.
+      mq.latex('\\sin');
+      assert.equal(getSpan('.mq-root-block :nth-child(1)'), '0 \\s');
+      assert.equal(getSpan('.mq-root-block :nth-child(2)'), '2 i');
+      assert.equal(getSpan('.mq-root-block :nth-child(3)'), '3 n');
+    });
   });
 
   suite('\\MathQuillMathField', function () {

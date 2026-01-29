@@ -198,6 +198,42 @@ mq.latex('123');
 mq.selection(selection); // will restore the selection
 ```
 
+## .domNodeToSpan(domNode)
+
+Returns the span of a given DOM node. If the DOM node is the `<span class="mq-binary-operator">+</span>` of a field with latex `a+b`, this method would return
+
+```js
+{
+  latex: 'a+b',
+  startIndex: 1,
+  endIndex: 2
+}
+```
+
+If the DOM node is not a child of the root DOM node of this API instance, `domNodeToSpan` returns `undefined`.
+
+You can pass the result of `.domNodeToSpan(...)` into `.selection(...)` to select a given node:
+
+```js
+el = document.querySelector(".mq-binary-operator");
+const span = mq.domNodeToSpan(el);
+mq.selection(span);
+```
+
+Note that this method also works for children of a node, so calling it on the child of a `\token{1}` still returns the span of the `\token{1}`.
+
+If the input node corresponds to a group such as a numerator, then the selected span is that for all children of the group, not including the `{}`. For example, if the DOM node is the `<span>` of class `.mq-numerator` of a field with latex `\frac{12}{34}`, this method would return
+
+```js
+{
+  latex: "\\frac{12}{34}",
+  startIndex: 6,
+  endIndex: 8
+}
+```
+
+That span corresponds to the substring `"12"`, not to the substring `"{12}"`.
+
 # Editable MathField methods
 
 Editable math fields have all of the [above](#mathquill-base-methods) methods in addition to the ones listed here.

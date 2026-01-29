@@ -148,29 +148,8 @@ class Controller_mouse extends Controller_latex {
   }
 
   seek(targetElm: Element | null, clientX: number, _clientY: number) {
-    var cursor = this.notify('select').cursor;
-    var node;
-
-    // we can click on an element that is deeply nested past the point
-    // that mathquill knows about. We need to traverse up to the first
-    // node that mathquill is aware of
-    while (targetElm) {
-      // try to find the MQ Node associated with the DOM Element
-      node = NodeBase.getNodeOfElement(targetElm);
-      if (node) {
-        const root = findControllerRoot(node);
-        if (root && root !== this.root) {
-          // Special case: if we found a node that belongs to a different root than ours, that means we're in a separate,
-          // embedded MathQuill instance. In that case, skip to that root's parent and continue.
-          targetElm = root.controller.container;
-        } else {
-          break;
-        }
-      }
-
-      // must be too deep, traverse up to the parent DOM Element
-      targetElm = targetElm.parentElement;
-    }
+    const cursor = this.notify('select').cursor;
+    let node = this.domNodeToMqNode(targetElm);
 
     // Could not find any nodes, just use the root
     if (!node) {
