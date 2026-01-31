@@ -348,6 +348,11 @@ function getInterface(v: number): MathQuill.v3.API | MathQuill.v1.API {
 
       return this.__controller.exportLatexSelection().selection;
     }
+
+    domNodeToSpan(dom: Element): ExportedLatexSelection | undefined {
+      return this.__controller.domNodeToSpan(dom);
+    }
+
     html() {
       return this.__controller.root
         .domFrag()

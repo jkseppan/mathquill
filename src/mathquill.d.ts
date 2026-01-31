@@ -37,6 +37,7 @@ declare namespace MathQuill {
       text(): string;
       selection(selection: ExportedLatexSelection): this;
       selection(): ExportedLatexSelection;
+      domNodeToSpan(dom: Element): ExportedLatexSelection | undefined;
       //chainable methods
       config(opts: Config): this;
       latex(latex: string): this;

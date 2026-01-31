@@ -270,6 +270,79 @@ class Controller_latex extends Controller_keystroke {
     };
   }
 
+  domNodeToMqNode(dom: Element | null): NodeBase | undefined {
+    // we can click on an element that is deeply nested past the point
+    // that mathquill knows about. We need to traverse up to the first
+    // node that mathquill is aware of
+    while (dom) {
+      // try to find the MQ Node associated with the DOM Element
+      const node = NodeBase.getNodeOfElement(dom);
+      if (node) {
+        const root = findControllerRoot(node);
+        if (root && root !== this.root) {
+          // Special case: if we found a node that belongs to a different root than ours, that means we're in a separate,
+          // embedded MathQuill instance. In that case, skip to that root's parent and continue.
+          dom = root.controller.container;
+        } else {
+          return node;
+        }
+      }
+
+      // must be too deep, traverse up to the parent DOM Element
+      dom = dom.parentElement;
+    }
+    return undefined;
+  }
+
+  domNodeToSpan(dom: Element): ExportedLatexSelection | undefined {
+    var ctx: LatexContext = {
+      uncleanedLatex: '',
+      uncleanedStartIndex: -1,
+      uncleanedEndIndex: -1
+    };
+
+    const mqNode = this.domNodeToMqNode(dom);
+    if (!mqNode) return undefined;
+
+    if (mqNode instanceof MathBlock) {
+      // mqNode is a group; give the span of the children.
+      ctx.startSelectionBefore = mqNode;
+      ctx.endSelectionAfter = mqNode;
+    } else {
+      // mqNode is a child of a group; give the span containing it.
+      const nodeL = mqNode[L];
+      if (nodeL) {
+        ctx.startSelectionAfter = nodeL;
+      } else {
+        ctx.startSelectionBefore = mqNode.parent;
+      }
+
+      const nodeR = mqNode[R];
+      if (nodeR) {
+        ctx.endSelectionBefore = nodeR;
+      } else {
+        ctx.endSelectionAfter = mqNode.parent;
+      }
+    }
+
+    this.root.latexRecursive(ctx);
+
+    // need to clean the latex
+    var uncleanedLatex = ctx.uncleanedLatex;
+    var cleanLatex = this.cleanLatex(uncleanedLatex);
+    const { startIndex, endIndex } = mapFromUncleanedToCleanedIndices(
+      uncleanedLatex,
+      cleanLatex,
+      ctx
+    );
+
+    return {
+      latex: cleanLatex,
+      startIndex: startIndex,
+      endIndex: endIndex
+    };
+  }
+
   classifyLatexForEfficientUpdate(latex: unknown) {
     if (typeof latex !== 'string') return;
 
