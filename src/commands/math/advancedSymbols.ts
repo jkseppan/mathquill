@@ -415,6 +415,25 @@ LatexCmds['∤'] =
   LatexCmds.nmid =
   LatexCmds.notdivides =
     bindBinaryOperator('\\nmid ', '&#8740;', 'does not divide');
+
+// Modular arithmetic
+LatexCmds.bmod = bindBinaryOperator('\\bmod ', 'mod', 'mod');
+LatexCmds.pmod = class extends MathCommand {
+  ctrlSeq = '\\pmod';
+  domView = new DOMView(1, (blocks) =>
+    h('span', { class: 'mq-non-leaf mq-pmod' }, [
+      h('span', {}, [h.text('\u00A0')]),
+      h('span', { class: 'mq-paren mq-scaled' }, [h.text('(')]),
+      h('span', { class: 'mq-operator-name' }, [h.text('mod')]),
+      h('span', {}, [h.text('\u00A0')]),
+      h.block('span', {}, blocks[0]),
+      h('span', { class: 'mq-paren mq-scaled' }, [h.text(')')])
+    ])
+  );
+  textTemplate = ['pmod(', ')'];
+  ariaLabel = 'modulo';
+};
+
 LatexCmds['≪'] = LatexCmds.ll = bindVanillaSymbol('\\ll ', '&#8810;', 'll');
 LatexCmds['≫'] = LatexCmds.gg = bindVanillaSymbol('\\gg ', '&#8811;', 'gg');
 LatexCmds.parallel = bindVanillaSymbol(

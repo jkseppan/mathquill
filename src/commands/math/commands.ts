@@ -1032,6 +1032,91 @@ LatexCmds['∫'] =
       }
     };
 
+LatexCmds['∬'] =
+  LatexCmds.iint =
+    class extends SummationNotation {
+      constructor() {
+        super('\\iint ', '', 'double integral');
+
+        this.ariaLabel = 'double integral';
+        this.domView = new DOMView(2, (blocks) =>
+          h('span', { class: 'mq-int mq-non-leaf' }, [
+            h('big', {}, [h.text(U_DOUBLE_INTEGRAL)]),
+            h('span', { class: 'mq-supsub mq-non-leaf' }, [
+              h('span', { class: 'mq-sup' }, [
+                h.block('span', { class: 'mq-sup-inner' }, blocks[1])
+              ]),
+              h.block('span', { class: 'mq-sub' }, blocks[0]),
+              h('span', { style: 'display:inline-block;width:0' }, [
+                h.text(U_ZERO_WIDTH_SPACE)
+              ])
+            ])
+          ])
+        );
+      }
+
+      createLeftOf(cursor: Cursor) {
+        MathCommand.prototype.createLeftOf.call(this, cursor);
+      }
+    };
+
+LatexCmds['∭'] =
+  LatexCmds.iiint =
+    class extends SummationNotation {
+      constructor() {
+        super('\\iiint ', '', 'triple integral');
+
+        this.ariaLabel = 'triple integral';
+        this.domView = new DOMView(2, (blocks) =>
+          h('span', { class: 'mq-int mq-non-leaf' }, [
+            h('big', {}, [h.text(U_TRIPLE_INTEGRAL)]),
+            h('span', { class: 'mq-supsub mq-non-leaf' }, [
+              h('span', { class: 'mq-sup' }, [
+                h.block('span', { class: 'mq-sup-inner' }, blocks[1])
+              ]),
+              h.block('span', { class: 'mq-sub' }, blocks[0]),
+              h('span', { style: 'display:inline-block;width:0' }, [
+                h.text(U_ZERO_WIDTH_SPACE)
+              ])
+            ])
+          ])
+        );
+      }
+
+      createLeftOf(cursor: Cursor) {
+        MathCommand.prototype.createLeftOf.call(this, cursor);
+      }
+    };
+
+LatexCmds['∮'] =
+  LatexCmds.oint =
+  LatexCmds.contourintegral =
+    class extends SummationNotation {
+      constructor() {
+        super('\\oint ', '', 'contour integral');
+
+        this.ariaLabel = 'contour integral';
+        this.domView = new DOMView(2, (blocks) =>
+          h('span', { class: 'mq-int mq-non-leaf' }, [
+            h('big', {}, [h.text(U_CONTOUR_INTEGRAL)]),
+            h('span', { class: 'mq-supsub mq-non-leaf' }, [
+              h('span', { class: 'mq-sup' }, [
+                h.block('span', { class: 'mq-sup-inner' }, blocks[1])
+              ]),
+              h.block('span', { class: 'mq-sub' }, blocks[0]),
+              h('span', { style: 'display:inline-block;width:0' }, [
+                h.text(U_ZERO_WIDTH_SPACE)
+              ])
+            ])
+          ])
+        );
+      }
+
+      createLeftOf(cursor: Cursor) {
+        MathCommand.prototype.createLeftOf.call(this, cursor);
+      }
+    };
+
 // Finnish integral substitution sign
 // Used in Finnish mathematics education for showing substitution bounds
 LatexCmds.bigg = // HACK: \bigg is used as the LaTeX output format
