@@ -129,6 +129,34 @@ var SVG_SYMBOLS = {
       h('svg', { preserveAspectRatio: 'none', viewBox: '0 0 10 54' }, [
         h('path', { d: 'M3.2 0 L6.8 27 L3.2 54 L2.2 54 L5.8 27 L2.2 0' })
       ])
+  },
+  '&lfloor;': {
+    width: '.55em',
+    html: () =>
+      h('svg', { preserveAspectRatio: 'none', viewBox: '0 0 11 24' }, [
+        h('path', { d: 'M3 0 L3 24 L8 24 L8 23 L4 23 L4 0' })
+      ])
+  },
+  '&rfloor;': {
+    width: '.55em',
+    html: () =>
+      h('svg', { preserveAspectRatio: 'none', viewBox: '0 0 11 24' }, [
+        h('path', { d: 'M8 0 L8 24 L3 24 L3 23 L7 23 L7 0' })
+      ])
+  },
+  '&lceil;': {
+    width: '.55em',
+    html: () =>
+      h('svg', { preserveAspectRatio: 'none', viewBox: '0 0 11 24' }, [
+        h('path', { d: 'M8 0 L3 0 L3 24 L4 24 L4 1 L8 1' })
+      ])
+  },
+  '&rceil;': {
+    width: '.55em',
+    html: () =>
+      h('svg', { preserveAspectRatio: 'none', viewBox: '0 0 11 24' }, [
+        h('path', { d: 'M3 0 L8 0 L8 24 L7 24 L7 1 L3 1' })
+      ])
   }
 };
 
@@ -1972,13 +2000,25 @@ var OPP_BRACKS = {
   '\\rangle ': '\\langle ',
   '|': '|',
   '\\lVert ': '\\rVert ',
-  '\\rVert ': '\\lVert '
+  '\\rVert ': '\\lVert ',
+  '&lfloor;': '&rfloor;',
+  '&rfloor;': '&lfloor;',
+  '\\lfloor ': '\\rfloor ',
+  '\\rfloor ': '\\lfloor ',
+  '&lceil;': '&rceil;',
+  '&rceil;': '&lceil;',
+  '\\lceil ': '\\rceil ',
+  '\\rceil ': '\\lceil '
 };
 
 var BRACKET_NAMES = {
   '&lang;': 'angle-bracket',
   '&rang;': 'angle-bracket',
-  '|': 'pipe'
+  '|': 'pipe',
+  '&lfloor;': 'floor',
+  '&rfloor;': 'floor',
+  '&lceil;': 'ceiling',
+  '&rceil;': 'ceiling'
 };
 
 function bindCharBracketPair(
@@ -2007,6 +2047,112 @@ LatexCmds.lVert = () =>
   new Bracket(L, '&#8741;', '&#8741;', '\\lVert ', '\\rVert ');
 LatexCmds.rVert = () =>
   new Bracket(R, '&#8741;', '&#8741;', '\\lVert ', '\\rVert ');
+LatexCmds.lfloor = () =>
+  new Bracket(L, '&lfloor;', '&rfloor;', '\\lfloor ', '\\rfloor ');
+LatexCmds.rfloor = () =>
+  new Bracket(R, '&lfloor;', '&rfloor;', '\\lfloor ', '\\rfloor ');
+LatexCmds.lceil = () =>
+  new Bracket(L, '&lceil;', '&rceil;', '\\lceil ', '\\rceil ');
+LatexCmds.rceil = () =>
+  new Bracket(R, '&lceil;', '&rceil;', '\\lceil ', '\\rceil ');
+
+var leftFloorSymbol = SVG_SYMBOLS['&lfloor;'];
+var rightFloorSymbol = SVG_SYMBOLS['&rfloor;'];
+LatexCmds.floor = class extends DelimsNode {
+  ctrlSeq = '\\lfloor';
+  domView = new DOMView(1, (blocks) =>
+    h('span', { class: 'mq-non-leaf mq-bracket-container' }, [
+      h(
+        'span',
+        {
+          style: 'width:' + leftFloorSymbol.width,
+          class: 'mq-paren mq-bracket-l mq-scaled'
+        },
+        [leftFloorSymbol.html()]
+      ),
+      h.block(
+        'span',
+        {
+          style:
+            'margin-left:' +
+            leftFloorSymbol.width +
+            '; margin-right:' +
+            rightFloorSymbol.width,
+          class: 'mq-non-leaf mq-bracket-middle'
+        },
+        blocks[0]
+      ),
+      h(
+        'span',
+        {
+          style: 'width:' + rightFloorSymbol.width,
+          class: 'mq-paren mq-bracket-r mq-scaled'
+        },
+        [rightFloorSymbol.html()]
+      )
+    ])
+  );
+  textTemplate = ['floor(', ')'];
+  mathspeakTemplate = ['StartFloor,', ', EndFloor'];
+  ariaLabel = 'floor';
+
+  latexRecursive(ctx: LatexContext) {
+    this.checkCursorContextOpen(ctx);
+    ctx.uncleanedLatex += '\\left\\lfloor ';
+    this.getEnd(L).latexRecursive(ctx);
+    ctx.uncleanedLatex += '\\right\\rfloor ';
+    this.checkCursorContextClose(ctx);
+  }
+};
+
+var leftCeilSymbol = SVG_SYMBOLS['&lceil;'];
+var rightCeilSymbol = SVG_SYMBOLS['&rceil;'];
+LatexCmds.ceil = class extends DelimsNode {
+  ctrlSeq = '\\lceil';
+  domView = new DOMView(1, (blocks) =>
+    h('span', { class: 'mq-non-leaf mq-bracket-container' }, [
+      h(
+        'span',
+        {
+          style: 'width:' + leftCeilSymbol.width,
+          class: 'mq-paren mq-bracket-l mq-scaled'
+        },
+        [leftCeilSymbol.html()]
+      ),
+      h.block(
+        'span',
+        {
+          style:
+            'margin-left:' +
+            leftCeilSymbol.width +
+            '; margin-right:' +
+            rightCeilSymbol.width,
+          class: 'mq-non-leaf mq-bracket-middle'
+        },
+        blocks[0]
+      ),
+      h(
+        'span',
+        {
+          style: 'width:' + rightCeilSymbol.width,
+          class: 'mq-paren mq-bracket-r mq-scaled'
+        },
+        [rightCeilSymbol.html()]
+      )
+    ])
+  );
+  textTemplate = ['ceil(', ')'];
+  mathspeakTemplate = ['StartCeiling,', ', EndCeiling'];
+  ariaLabel = 'ceiling';
+
+  latexRecursive(ctx: LatexContext) {
+    this.checkCursorContextOpen(ctx);
+    ctx.uncleanedLatex += '\\left\\lceil ';
+    this.getEnd(L).latexRecursive(ctx);
+    ctx.uncleanedLatex += '\\right\\rceil ';
+    this.checkCursorContextClose(ctx);
+  }
+};
 
 LatexCmds.left = class extends MathCommand {
   parser() {
@@ -2015,7 +2161,7 @@ LatexCmds.left = class extends MathCommand {
     var optWhitespace = Parser.optWhitespace;
 
     return optWhitespace
-      .then(regex(/^(?:[([|]|\\\{|\\langle(?![a-zA-Z])|\\lVert(?![a-zA-Z]))/))
+      .then(regex(/^(?:[([|]|\\\{|\\langle(?![a-zA-Z])|\\lVert(?![a-zA-Z])|\\lfloor(?![a-zA-Z])|\\lceil(?![a-zA-Z]))/))
       .then(function (ctrlSeq) {
         var open = ctrlSeq.replace(/^\\/, '');
         if (ctrlSeq == '\\langle') {
@@ -2026,11 +2172,19 @@ LatexCmds.left = class extends MathCommand {
           open = '&#8741;';
           ctrlSeq = ctrlSeq + ' ';
         }
+        if (ctrlSeq == '\\lfloor') {
+          open = '&lfloor;';
+          ctrlSeq = ctrlSeq + ' ';
+        }
+        if (ctrlSeq == '\\lceil') {
+          open = '&lceil;';
+          ctrlSeq = ctrlSeq + ' ';
+        }
         return latexMathParser.then(function (block) {
           return string('\\right')
             .skip(optWhitespace)
             .then(
-              regex(/^(?:[\])|]|\\\}|\\rangle(?![a-zA-Z])|\\rVert(?![a-zA-Z]))/)
+              regex(/^(?:[\])|]|\\\}|\\rangle(?![a-zA-Z])|\\rVert(?![a-zA-Z])|\\rfloor(?![a-zA-Z])|\\rceil(?![a-zA-Z]))/)
             )
             .map(function (end) {
               var close = end.replace(/^\\/, '');
@@ -2040,6 +2194,14 @@ LatexCmds.left = class extends MathCommand {
               }
               if (end == '\\rVert') {
                 close = '&#8741;';
+                end = end + ' ';
+              }
+              if (end == '\\rfloor') {
+                close = '&rfloor;';
+                end = end + ' ';
+              }
+              if (end == '\\rceil') {
+                close = '&rceil;';
                 end = end + ' ';
               }
               var cmd = new Bracket(0, open, close, ctrlSeq, end);
