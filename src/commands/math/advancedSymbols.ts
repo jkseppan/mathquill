@@ -13,10 +13,15 @@ LatexCmds['⊗'] = LatexCmds.otimes = bindSimpleBinop('otimes');
 
 LatexCmds['∗'] =
   LatexCmds.ast =
-  LatexCmds.star =
   LatexCmds.loast =
   LatexCmds.lowast =
-    bindBinaryOperator('\\ast ', '&lowast;', 'low asterisk');
+    bindBinaryOperator('\\ast ', '&lowast;', 'asterisk');
+
+LatexCmds['⋆'] = LatexCmds.star = bindBinaryOperator(
+  '\\star ',
+  '&#8902;',
+  'star'
+);
 
 LatexCmds['∴'] =
   LatexCmds.therefor =
@@ -219,6 +224,70 @@ LatexCmds['ℍ'] =
   LatexCmds.Quaternions =
     bindVanillaSymbol('\\mathbb{H}', '&#8461;', 'quaternions');
 
+//Fraktur letters (A-Z, a-z)
+const frakturUpperCodePoints: { [key: string]: number } = {
+  A: 120068, B: 120069, C: 8493, D: 120071, E: 120072, F: 120073, G: 120074,
+  H: 8460, I: 8465, J: 120077, K: 120078, L: 120079, M: 120080, N: 120081,
+  O: 120082, P: 120083, Q: 120084, R: 8476, S: 120086, T: 120087, U: 120088,
+  V: 120089, W: 120090, X: 120091, Y: 120092, Z: 8488
+};
+
+for (const letter of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+  const codePoint = frakturUpperCodePoints[letter];
+  const unicodeChar = String.fromCodePoint(codePoint);
+  LatexCmds[unicodeChar] = LatexCmds['frak' + letter] = bindVanillaSymbol(
+    '\\mathfrak{' + letter + '}',
+    '&#' + codePoint + ';',
+    'fraktur ' + letter
+  );
+}
+
+for (const letter of 'abcdefghijklmnopqrstuvwxyz') {
+  const codePoint = 120094 + letter.charCodeAt(0) - 97;
+  const unicodeChar = String.fromCodePoint(codePoint);
+  LatexCmds[unicodeChar] = LatexCmds['frak' + letter] = bindVanillaSymbol(
+    '\\mathfrak{' + letter + '}',
+    '&#' + codePoint + ';',
+    'fraktur ' + letter
+  );
+}
+
+LatexCmds.mathfrak = class extends MathCommand {
+  createLeftOf(_cursor: Cursor) {}
+  numBlocks() {
+    return 1 as const;
+  }
+  parser() {
+    var string = Parser.string;
+    var regex = Parser.regex;
+    var optWhitespace = Parser.optWhitespace;
+    var succeed = Parser.succeed;
+    return optWhitespace
+      .then(string('{'))
+      .then(optWhitespace)
+      .then(regex(/^[A-Za-z]+/))
+      .skip(optWhitespace)
+      .skip(string('}'))
+      .then(function (letters: string) {
+        var nodes: MQNode[] = [];
+        for (var i = 0; i < letters.length; i++) {
+          var c = letters[i];
+          var cmdFactory = LatexCmds['frak' + c] as MQNodeBuilderNoParam;
+          nodes.push(cmdFactory());
+        }
+        if (nodes.length === 1) {
+          return succeed(nodes[0]);
+        }
+        // Link nodes together as siblings
+        for (var i = 0; i < nodes.length; i++) {
+          nodes[i][L] = i > 0 ? nodes[i - 1] : 0;
+          nodes[i][R] = i < nodes.length - 1 ? nodes[i + 1] : 0;
+        }
+        return succeed(new Fragment(nodes[0], nodes[nodes.length - 1]));
+      });
+  }
+};
+
 //spacing
 LatexCmds.quad = LatexCmds.emsp = bindVanillaSymbol(
   '\\quad ',
@@ -341,6 +410,11 @@ LatexCmds['∣'] = LatexCmds.mid = bindVanillaSymbol(
   '&#8739;',
   'divides'
 );
+LatexCmds.divides = bindBinaryOperator('\\mid ', '&#8739;', 'divides');
+LatexCmds['∤'] =
+  LatexCmds.nmid =
+  LatexCmds.notdivides =
+    bindBinaryOperator('\\nmid ', '&#8740;', 'does not divide');
 LatexCmds['≪'] = LatexCmds.ll = bindVanillaSymbol('\\ll ', '&#8810;', 'll');
 LatexCmds['≫'] = LatexCmds.gg = bindVanillaSymbol('\\gg ', '&#8811;', 'gg');
 LatexCmds.parallel = bindVanillaSymbol(
@@ -836,6 +910,12 @@ LatexCmds['ℵ'] =
   LatexCmds.aleph =
   LatexCmds.alephsym =
     bindVanillaSymbol('\\aleph ', '&alefsym;', 'alef sym');
+
+LatexCmds['ℶ'] = LatexCmds.beth = bindVanillaSymbol(
+  '\\beth ',
+  '&#8502;',
+  'beth'
+);
 
 LatexCmds['∃'] =
   LatexCmds.xist = //LOL

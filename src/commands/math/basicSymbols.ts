@@ -1450,7 +1450,6 @@ LatexCmds['×'] =
 LatexCmds['÷'] =
   LatexCmds.div =
   LatexCmds.divide =
-  LatexCmds.divides =
     bindBinaryOperator('\\div ', '&divide;', '[/]', 'divided by');
 
 class Sim extends BinaryOperator {
