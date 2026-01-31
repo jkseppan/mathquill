@@ -49,7 +49,7 @@ var latexMathParser = (function () {
     return new VanillaSymbol(c);
   });
 
-  var controlSequence = regex(/^[^\\a-eg-zA-Z]/) // hotfix #164; match MathBlock::write
+  var controlSequence = regex(/^[^\\a-eg-zA-Z$]/) // hotfix #164; match MathBlock::write
     .or(
       string('\\').then(
         regex(/^[a-z]+/i)
