@@ -405,15 +405,9 @@ LatexCmds['≃'] = LatexCmds.simeq = bindVanillaSymbol(
   '&#8771;',
   'similar or equal to'
 );
-LatexCmds['∣'] = LatexCmds.mid = bindVanillaSymbol(
-  '\\mid ',
-  '&#8739;',
-  'divides'
-);
-LatexCmds.divides = bindBinaryOperator('\\mid ', '&#8739;', 'divides');
+LatexCmds.mid = bindBinaryOperator('\\mid ', '&#8739;', 'divides');
 LatexCmds['∤'] =
   LatexCmds.nmid =
-  LatexCmds.notdivides =
     bindBinaryOperator('\\nmid ', '&#8740;', 'does not divide');
 
 // Modular arithmetic

@@ -884,8 +884,6 @@ LatexCmds['□'] = LatexCmds.square = bindVanillaSymbol(
   '\u25A1',
   'square'
 );
-LatexCmds.mid = bindVanillaSymbol('\\mid ', '\u2223', 'mid');
-LatexCmds['∤'] = LatexCmds.nmid = bindVanillaSymbol('\\nmid ', '\u2224', 'does not divide');
 
 // support for custom css
 class SymbolWithCustomClass extends MQSymbol {
