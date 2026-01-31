@@ -700,7 +700,8 @@ function defaultAutoOpNames() {
 
   // compat with some of the nonstandard LaTeX exported by MathQuill
   // before #247. None of these are real LaTeX commands so, seems safe
-  var moreNonstandardOps = 'gcf hcf lcm proj span'.split(' ');
+  // syt and pyj are Finnish names for gcd and lcm
+  var moreNonstandardOps = 'gcf hcf lcm proj span syt pyj'.split(' ');
   for (var i = 0; i < moreNonstandardOps.length; i += 1) {
     AutoOpNames[moreNonstandardOps[i]] = 1;
   }
