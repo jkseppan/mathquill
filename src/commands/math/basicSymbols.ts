@@ -898,6 +898,11 @@ LatexCmds['□'] = LatexCmds.square = bindVanillaSymbol(
   '\u25A1',
   'square'
 );
+LatexCmds['■'] = LatexCmds.qed = LatexCmds.blacksquare = bindVanillaSymbol(
+  '\\qed ',
+  '\u25A0',
+  'end of proof'
+);
 
 // support for custom css
 class SymbolWithCustomClass extends MQSymbol {
