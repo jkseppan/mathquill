@@ -3036,7 +3036,11 @@ class MatrixCell extends MathBlock {
     }
   }
 
-  keystroke(key: string, e: KeyboardEvent, ctrlr: Controller): void | boolean {
+  keystroke(
+    key: string,
+    e: KeyboardEvent | undefined,
+    ctrlr: Controller
+  ): void | boolean {
     switch (key) {
       case 'Tab': {
         // Work out how many columns
@@ -3052,7 +3056,7 @@ class MatrixCell extends MathBlock {
         });
         // Only add new column if this is the rightmost column
         if (currentColumn === columns - 1) {
-          e.preventDefault();
+          e?.preventDefault();
           return (this.parent as Matrix).insert('addColumn', this);
         }
         break;
@@ -3073,7 +3077,7 @@ class MatrixCell extends MathBlock {
             }
           }
         });
-        e.preventDefault();
+        e?.preventDefault();
         if (nextRowFirstCell && nextRowIsEmpty) {
           ctrlr.cursor.insAtDirEnd(L, nextRowFirstCell);
           break;

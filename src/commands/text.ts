@@ -517,7 +517,7 @@ class RootMathCommand extends MathCommand {
 }
 
 class RootTextBlock extends RootMathBlock {
-  keystroke(key: string, e: KeyboardEvent, ctrlr: Controller) {
+  keystroke(key: string, e: KeyboardEvent | undefined, ctrlr: Controller) {
     if (key === 'Spacebar' || key === 'Shift-Spacebar') return;
     return super.keystroke(key, e, ctrlr);
   }
