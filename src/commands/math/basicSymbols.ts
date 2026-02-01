@@ -892,7 +892,9 @@ class SymbolWithCustomClass extends MQSymbol {
     super(ch, h('span', { class: customClass }, [h.text(ch)]));
   }
 }
-LatexCmds[','] = () => new SymbolWithCustomClass(',', 'mq-comma');
+LatexCmds[','] = () =>
+  new MQSymbol('\\, ', h('span', { style: 'margin-right:0.17em' }), ' ');
+CharCmds[','] = () => new SymbolWithCustomClass(',', 'mq-comma');
 
 // does not use Symbola font
 class NonSymbolaSymbol extends MQSymbol {

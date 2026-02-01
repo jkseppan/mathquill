@@ -295,16 +295,22 @@ LatexCmds.quad = LatexCmds.emsp = bindVanillaSymbol(
   '4 spaces'
 );
 LatexCmds.qquad = bindVanillaSymbol('\\qquad ', '        ', '8 spaces');
-/* spacing special characters, gonna have to implement this in LatexCommandInput::onText somehow
-case ',':
-  return VanillaSymbol('\\, ',' ', 'comma');
-case ':':
-  return VanillaSymbol('\\: ','  ', 'colon');
-case ';':
-  return VanillaSymbol('\\; ','   ', 'semicolon');
-case '!':
-  return MQSymbol('\\! ','<span style="margin-right:-.2em"></span>', 'exclamation point');
-*/
+
+// Thin space alias (actual \, is in basicSymbols.ts)
+LatexCmds.thinspace = () =>
+  new MQSymbol('\\, ', h('span', { style: 'margin-right:0.17em' }), ' ');
+
+// Medium space \: (4/18 em ≈ 0.22em)
+LatexCmds[':'] = () =>
+  new MQSymbol('\\: ', h('span', { style: 'margin-right:0.22em' }), '  ');
+
+// Thick space \; (5/18 em ≈ 0.28em)
+LatexCmds[';'] = () =>
+  new MQSymbol('\\; ', h('span', { style: 'margin-right:0.28em' }), '   ');
+
+// Negative thin space \!
+LatexCmds['!'] = () =>
+  new MQSymbol('\\! ', h('span', { style: 'margin-right:-0.17em' }), '');
 
 //binary operators
 LatexCmds['◇'] = LatexCmds.diamond = bindVanillaSymbol(
@@ -914,6 +920,18 @@ LatexCmds['∂'] =
   LatexCmds.part =
   LatexCmds.partial =
     bindVanillaSymbol('\\partial ', '&part;', 'partial');
+
+// Differential d symbols for calculus
+// \diffd - upright d for use in fractions like dy/dx or ∫ f(x) dx
+LatexCmds.diffd = class extends MQSymbol {
+  constructor() {
+    super(
+      '\\mathrm{d}',
+      h('span', { class: 'mq-roman' }, [h.text('d')]),
+      'd'
+    );
+  }
+};
 
 LatexCmds['£'] = LatexCmds.pounds = bindVanillaSymbol('\\pounds ', '&pound;');
 
