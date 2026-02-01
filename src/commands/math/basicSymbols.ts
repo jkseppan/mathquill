@@ -701,7 +701,7 @@ function defaultAutoOpNames() {
   // compat with some of the nonstandard LaTeX exported by MathQuill
   // before #247. None of these are real LaTeX commands so, seems safe
   // syt and pyj are Finnish names for gcd and lcm
-  var moreNonstandardOps = 'gcf hcf lcm proj span syt pyj'.split(' ');
+  var moreNonstandardOps = 'gcf hcf lcm proj span syt pyj inf'.split(' ');
   for (var i = 0; i < moreNonstandardOps.length; i += 1) {
     AutoOpNames[moreNonstandardOps[i]] = 1;
   }
@@ -805,6 +805,19 @@ for (var fn in Options.prototype.autoOperatorNames)
   if (Options.prototype.autoOperatorNames.hasOwnProperty(fn)) {
     (LatexCmds as LatexCmdsAny)[fn as string] = OperatorName;
   }
+
+// Override \inf and \sup to avoid conflict with \in autoCommand
+// These create the operator name as a single unit rather than letter-by-letter
+class InfSupOperator extends MQSymbol {
+  constructor(name: string) {
+    super(
+      '\\' + name + ' ',
+      h('span', { class: 'mq-operator-name' }, [h.text(name)])
+    );
+  }
+}
+LatexCmds.inf = () => new InfSupOperator('inf');
+LatexCmds.sup = () => new InfSupOperator('sup');
 
 LatexCmds.operatorname = class extends MathCommand {
   createLeftOf() {}
