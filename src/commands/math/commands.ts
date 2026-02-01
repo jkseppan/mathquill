@@ -2841,7 +2841,7 @@ class Matrix extends Environment {
     // Insert the new row
     const table = this.domFrag().oneElement().querySelector('table');
     if (table) {
-      const trs = table.querySelectorAll('tr');
+      const trs = table.querySelectorAll(':scope > tbody > tr, :scope > tr');
       const targetRow = trs[row];
       if (targetRow && targetRow.nextSibling) {
         table.insertBefore(newRow, targetRow.nextSibling);
@@ -2882,9 +2882,9 @@ class Matrix extends Environment {
     // Add cell <td> elements in correct positions
     const table = this.domFrag().oneElement().querySelector('table');
     if (table) {
-      const trs = table.querySelectorAll('tr');
+      const trs = table.querySelectorAll(':scope > tbody > tr, :scope > tr');
       trs.forEach((tr, i) => {
-        const tds = tr.querySelectorAll('td');
+        const tds = tr.querySelectorAll(':scope > td');
         const targetTd = tds[column! - 1];
         const newTd = rows[i][column!].domFrag().oneElement();
         if (targetTd && targetTd.nextSibling) {
